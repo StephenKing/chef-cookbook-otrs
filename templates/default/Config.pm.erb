@@ -63,7 +63,7 @@ sub Load {
     # ---------------------------------------------------- #
     # fs root directory
     # ---------------------------------------------------- #
-    $Self->{Home} = '/usr/local/otrs-<%= node.otrs.version %>';
+    $Self->{Home} = '<%= node.otrs.prefix %>/otrs/';
 
     # ---------------------------------------------------- #
     # insert your own config settings "here"               #
@@ -82,7 +82,7 @@ sub Load {
     $Self->{'SecureMode'} = 1;
     $Self->{'Organization'} = '<%= node.otrs.kernel_config.organization %>';
     $Self->{'FQDN'} = '<%= node.otrs.fqdn %>';
-    $Self->{'AdminEmail'} = '<%= node.otrs.kernel_config.email';
+    $Self->{'AdminEmail'} = '<%= node.otrs.kernel_config.email %>';
     
     # ---------------------------------------------------- #
     # ---------------------------------------------------- #
