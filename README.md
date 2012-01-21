@@ -56,15 +56,17 @@ TODO
 ====
 
 * HTTPS support for Apache
-* Executing this cookbook takes two restarts at the moment:
-** 
+* Executing this cookbook requires two restarts at the moment:
+ * First time it will fail in `RebuildConfiguration` as database is not configured, yet. Problem is that the MySQL part does not set up the database user quick enough. I've already [posted a question](http://lists.opscode.com/sympa/arc/chef/2012-01/msg00288.html) to the _chef_ mailing list, how to do this in a clean way. 
+ * Next time (weird thing) the Apache restart command exits unclean, although everything is fine.
+ * **I'm looking forward to your help on how to fix both of them!**
 
 Change Log
 ==========
 
 ###0.8.0
 
-- Initial version published
+* Initial version published
 	
 	
 License and Authors
