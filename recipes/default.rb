@@ -177,11 +177,9 @@ template "#{node.otrs.prefix}/otrs/Kernel/Config.pm" do
   owner "otrs"
   group "root"
   mode "644"
-
-  # there might be a better solution instead of :create_if_missing + :immediately
-#  action :create_if_missing
-  notifies :run, "execute[SetPermissions]", :immediately
-  notifies :run, "execute[RebuildConfig]", :immediately
+  notifies :run, "execute[SetPermissions]"
+  notifies :run, "execute[RebuildConfig]"
+  notifies :run, "execute[DeleteCache]"
 end
 
 template "#{node.otrs.prefix}/otrs/Kernel/Config/GenericAgent.pm" do
@@ -189,19 +187,19 @@ template "#{node.otrs.prefix}/otrs/Kernel/Config/GenericAgent.pm" do
   owner "otrs"
   group "root"
   mode "644"
-#  action :create_if_missing
-  notifies :run, "execute[SetPermissions]", :immediately
-  notifies :run, "execute[RebuildConfig]", :immediately
+  notifies :run, "execute[SetPermissions]"
+  notifies :run, "execute[RebuildConfig]"
+  notifies :run, "execute[DeleteCache]"
 end
 
 template "#{node.otrs.prefix}/otrs/Kernel/Config/Files/ZZZAuto.pm" do
   source "SysConfig.pm"
-  owner node[:apache][:user]
-  group node[:apache][:group]
+  owner node['apache']['user']
+  group node['apache']['group']
   mode "664"
-#  action :create_if_missing
-  notifies :run, "execute[SetPermissions]", :immediately
-  notifies :run, "execute[RebuildConfig]", :immediately
+  notifies :run, "execute[SetPermissions]"
+  notifies :run, "execute[RebuildConfig]"
+  notifies :run, "execute[DeleteCache]"
 end
 
 ############################
@@ -210,14 +208,21 @@ end
 # Set file system permissions
 execute "SetPermissions" do
   command "bin/otrs.SetPermissions.pl #{node.otrs.prefix}/otrs-#{node.otrs.version} --otrs-user=otrs --otrs-group=#{node.apache.group} --web-user=#{node.apache.user} --web-group=#{node.apache.group}"
-  cwd "#{node.otrs.prefix}/otrs-#{node.otrs.version}"
+  cwd "#{node.otrs.prefix}/otrs"
   user "root"
   action :nothing
 end
 
 execute "RebuildConfig" do
   command "bin/otrs.RebuildConfig.pl"
-  cwd "#{node.otrs.prefix}/otrs-#{node.otrs.version}"
+  cwd "#{node.otrs.prefix}/otrs"
+  user "otrs"
+  action :nothing
+end
+
+execute "DeleteCache" do
+  command "bin/otrs.DeleteCache.pl"
+  cwd "#{node.otrs.prefix}/otrs"
   user "otrs"
   action :nothing
 end
