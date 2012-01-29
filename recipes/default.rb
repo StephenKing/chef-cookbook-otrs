@@ -26,7 +26,7 @@ user "otrs" do
   comment "OTRS user"
   home "#{node.otrs.prefix}/otrs"
   shell "/bin/bash"
-  group node[:apache][:group]
+  group node['apache']['group']
   system true
 end
 
@@ -85,7 +85,7 @@ end
 script "extract" do
   interpreter "bash"
   user "root"
-  cwd node[:otrs][:prefix]
+  cwd node['otrs']['prefix']
   action :nothing
   code <<-EOH
   tar xfz #{node.otrs.prefix}/otrs-#{node.otrs.version}.tar.gz
@@ -108,7 +108,7 @@ include_recipe "database"
 
 # generate the password
 ::Chef::Recipe.send(:include, Opscode::OpenSSL::Password)
-node.set_unless[:otrs][:database][:password] = secure_password
+node.set_unless['otrs']['database']['password'] = secure_password
 
 mysql_connection_info = {:host => "localhost", :username => 'root', :password => node['mysql']['server_root_password']}
 
@@ -134,14 +134,14 @@ begin
     # create otrs user
     mysql_database_user 'otrs' do
       connection mysql_connection_info
-      password node[:otrs][:database][:password]
+      password node['otrs']['database']['password']
       action :create
     end
 
     # Grant otrs
     mysql_database_user 'otrs' do
       connection mysql_connection_info
-      password node[:otrs][:database][:password]
+      password node['otrs']['database']['password']
       database_name 'otrs'
       host 'localhost'
       privileges [:select,:update,:insert,:create,:alter,:drop,:delete]
@@ -235,8 +235,8 @@ template "#{node.otrs.prefix}/otrs/scripts/apache2-perl-startup.pl" do
 end
 
 # create vhost
-web_app "#{node.otrs.fqdn}" do
-  server_name "#{node.otrs.fqdn}"
+web_app node['otrs']['fqdn'] do
+  server_name node['otrs']['fqdn']
   server_aliases ["www.#{node.otrs.fqdn}"]
   docroot "#{node.otrs.prefix}/otrs-#{node.otrs.version}"
 end
