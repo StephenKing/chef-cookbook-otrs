@@ -175,8 +175,8 @@ end
 template "#{node.otrs.prefix}/otrs/Kernel/Config.pm" do
   source "Config.pm.erb"
   owner "otrs"
-  group "root"
-  mode "644"
+  group node['apache']['group']
+  mode "0664"
   notifies :run, "execute[SetPermissions]"
   notifies :run, "execute[RebuildConfig]"
   notifies :run, "execute[DeleteCache]"
@@ -185,8 +185,8 @@ end
 template "#{node.otrs.prefix}/otrs/Kernel/Config/GenericAgent.pm" do
   source "GenericAgent.pm.erb"
   owner "otrs"
-  group "root"
-  mode "644"
+  group node['apache']['group']
+  mode "0664"
   notifies :run, "execute[SetPermissions]"
   notifies :run, "execute[RebuildConfig]"
   notifies :run, "execute[DeleteCache]"
@@ -194,9 +194,9 @@ end
 
 template "#{node.otrs.prefix}/otrs/Kernel/Config/Files/ZZZAuto.pm" do
   source "SysConfig.pm"
-  owner node['apache']['user']
+  owner "otrs"
   group node['apache']['group']
-  mode "664"
+  mode "0664"
   notifies :run, "execute[SetPermissions]"
   notifies :run, "execute[RebuildConfig]"
   notifies :run, "execute[DeleteCache]"
