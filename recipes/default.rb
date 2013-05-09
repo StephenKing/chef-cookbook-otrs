@@ -322,7 +322,6 @@ end
 
 cron "DeleteSessionIDs" do
   hour "0"
-  minute ""
   command "#{node.otrs.prefix}/otrs/bin/otrs.DeleteSessionIDs.pl --expired >> /dev/null"
   user "otrs"
 end
