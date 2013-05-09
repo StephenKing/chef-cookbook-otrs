@@ -40,10 +40,12 @@ Attributes
 * `node['otrs']['kernel_config']['email']` - Admin email address.
 * `node['otrs']['kernel_config']['system_id']` - System ID that should be more or less unique.
 
-* `node['otrs']['database']['host']` - Database host
-* `node['otrs']['database']['user']` - Database user
-* `node['otrs']['database']['password']` - Database password
+* `node['otrs']['database']['host']` - Database host default localhost 
+* `node['otrs']['database']['user']` - Database user used by OTRS application
+* `node['otrs']['database']['password']` - Database password by OTRS application
 * `node['otrs']['database']['name']` - Database name
+* `node['otrs']['database']['dba_user']` - Database dba user used for database creation
+* `node['otrs']['database']['dba_password']` - Database dba password used for database create
 
 
 Usage
@@ -61,10 +63,11 @@ TODO
  * Next time (weird thing) the Apache restart command exits unclean, although everything is fine.
  * **I'm looking forward to your help on how to fix both of them!**
 
+
 Change Log
 ==========
 
-###0.8.0
+###0.9.0
 
 * Initial version published
 	

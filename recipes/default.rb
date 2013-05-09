@@ -101,17 +101,10 @@ end
 ############################
 # MySql setup
 
-# Install MySQL server
-
-include_recipe "mysql::server"
 include_recipe "mysql::client"
 include_recipe "database"
 
-# generate the password
-::Chef::Recipe.send(:include, Opscode::OpenSSL::Password)
-node.set_unless['otrs']['database']['password'] = secure_password
-
-mysql_connection_info = {:host => "localhost", :username => 'root', :password => node['mysql']['server_root_password']}
+mysql_connection_info = {:host => node['otrs']['database']['host'], :username => node['otrs']['database']['dba_user'], :password => node['otrs']['database']['dba_password']}
 
 
 begin
@@ -120,7 +113,7 @@ begin
   end
   Gem.clear_paths  
   require 'mysql'
-  m=Mysql.new("localhost","root",node['mysql']['server_root_password']) 
+  m=Mysql.new(node['otrs']['database']['host'],node['otrs']['database']['dba_user'],node['otrs']['database']['dba_password']) 
 
   if m.list_dbs.include?("otrs") == false
     # create otrs database
@@ -136,6 +129,7 @@ begin
     mysql_database_user 'otrs' do
       connection mysql_connection_info
       password node['otrs']['database']['password']
+      host node['fqdn']
       action :create
     end
 
@@ -144,23 +138,23 @@ begin
       connection mysql_connection_info
       password node['otrs']['database']['password']
       database_name 'otrs'
-      host 'localhost'
+      host node['fqdn']
       privileges [:select,:update,:insert,:create,:alter,:drop,:delete]
       action :grant
     end
     
     execute "otrs_schema" do
-      command "/usr/bin/mysql -u root #{node.otrs.database.name} -p#{node.mysql.server_root_password} < #{node.otrs.prefix}/otrs/scripts/database/otrs-schema.mysql.sql"
+      command "/usr/bin/mysql  -h #{node.otrs.database.host} -u #{node.otrs.database.dba_user} #{node.otrs.database.name} -p#{node.otrs.database.dba_password} < #{node.otrs.prefix}/otrs/scripts/database/otrs-schema.mysql.sql"
       action :nothing
     end
     
     execute "otrs_initial_insert" do
-      command "/usr/bin/mysql -u root #{node.otrs.database.name} -p#{node.mysql.server_root_password} < #{node.otrs.prefix}/otrs/scripts/database/otrs-initial_insert.mysql.sql"
+      command "/usr/bin/mysql  -h #{node.otrs.database.host} -u #{node.otrs.database.dba_user} #{node.otrs.database.name} -p#{node.otrs.database.dba_password} < #{node.otrs.prefix}/otrs/scripts/database/otrs-initial_insert.mysql.sql"
       action :nothing
     end
     
     execute "otrs_schema-post" do
-      command "/usr/bin/mysql -u root #{node.otrs.database.name} -p#{node.mysql.server_root_password} < #{node.otrs.prefix}/otrs/scripts/database/otrs-schema-post.mysql.sql"
+      command "/usr/bin/mysql -h #{node.otrs.database.host} -u #{node.otrs.database.dba_user} #{node.otrs.database.name} -p#{node.otrs.database.dba_password} < #{node.otrs.prefix}/otrs/scripts/database/otrs-schema-post.mysql.sql"
       action :nothing
     end
   end
@@ -192,15 +186,16 @@ template "#{node.otrs.prefix}/otrs/Kernel/Config/GenericAgent.pm" do
   notifies :run, "execute[DeleteCache]"
 end
 
-template "#{node.otrs.prefix}/otrs/Kernel/Config/Files/ZZZAuto.pm" do
-  source "SysConfig.pm"
-  owner "otrs"
-  group node['apache']['group']
-  mode "0664"
-  notifies :run, "execute[SetPermissions]"
-  notifies :run, "execute[RebuildConfig]"
-  notifies :run, "execute[DeleteCache]"
-end
+#removed SysConfig.pm so that web based config in ZZZAuto.pm is not removed by chef
+#template "#{node.otrs.prefix}/otrs/Kernel/Config/Files/ZZZAuto.pm" do
+#  source "SysConfig.pm"
+#  owner "otrs"
+#  group node['apache']['group']
+#  mode "0664"
+#  notifies :run, "execute[SetPermissions]"
+#  notifies :run, "execute[RebuildConfig]"
+#  notifies :run, "execute[DeleteCache]"
+#end
 
 ############################
 # OTRS house keeping
@@ -322,7 +317,7 @@ end
 
 cron "DeleteSessionIDs" do
   hour "0"
-  minute ""
+  minute "5"
   command "#{node.otrs.prefix}/otrs/bin/otrs.DeleteSessionIDs.pl --expired >> /dev/null"
   user "otrs"
 end
