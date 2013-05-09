@@ -103,15 +103,20 @@ end
 
 # Install MySQL server
 
-include_recipe "mysql::server"
+#include_recipe "mysql::server"
 include_recipe "mysql::client"
 include_recipe "database"
 
 # generate the password
-::Chef::Recipe.send(:include, Opscode::OpenSSL::Password)
-node.set_unless['otrs']['database']['password'] = secure_password
+#::Chef::Recipe.send(:include, Opscode::OpenSSL::Password)
+#node.set_unless['otrs']['database']['password'] = secure_password
 
-mysql_connection_info = {:host => node['otrs']['database']['host'], :username => 'root', :password => node['mysql']['server_root_password']}
+# Get mysql root password from databag secrets
+mysql_secrets = Chef::EncryptedDataBagItem.load("secrets", "mysql")
+mysql_root_pass = mysql_secrets[node.chef_environment]['root']
+
+
+mysql_connection_info = {:host => node['otrs']['database']['host'], :username => 'root', :password => :mysql_root_pass}
 
 
 begin
