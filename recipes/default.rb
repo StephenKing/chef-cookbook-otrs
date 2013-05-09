@@ -111,7 +111,7 @@ include_recipe "database"
 ::Chef::Recipe.send(:include, Opscode::OpenSSL::Password)
 node.set_unless['otrs']['database']['password'] = secure_password
 
-mysql_connection_info = {:host => "localhost", :username => 'root', :password => node['mysql']['server_root_password']}
+mysql_connection_info = {:host => node['otrs']['database']['host'], :username => 'root', :password => node['mysql']['server_root_password']}
 
 
 begin
@@ -120,7 +120,7 @@ begin
   end
   Gem.clear_paths  
   require 'mysql'
-  m=Mysql.new("localhost","root",node['mysql']['server_root_password']) 
+  m=Mysql.new(node['otrs']['database']['host'],"root",node['mysql']['server_root_password']) 
 
   if m.list_dbs.include?("otrs") == false
     # create otrs database
