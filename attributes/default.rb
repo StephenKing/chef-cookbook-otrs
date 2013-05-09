@@ -12,6 +12,8 @@ default['otrs']['database']['host'] = "localhost"
 default['otrs']['database']['user'] = "otrs"
 default['otrs']['database']['password'] = nil
 default['otrs']['database']['name'] = "otrs"
+default['otrs']['database']['dba_user'] = "root"
+default['otrs']['database']['dba_password'] = "password"
 
 default['otrs']['kernel_config']['email'] = "otrs@otrs.example.org"
 default['otrs']['kernel_config']['organization'] = "Example Association"
