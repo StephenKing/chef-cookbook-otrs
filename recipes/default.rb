@@ -1,3 +1,4 @@
+# Encoding: UTF-8
 #
 # Cookbook Name:: otrs
 # Recipe:: default
@@ -17,15 +18,14 @@
 # limitations under the License.
 #
 
-
 ############################
 # System configuration
 
 # create a unix user account for OTRS
-user "otrs" do
-  comment "OTRS user"
+user 'otrs' do
+  comment 'OTRS user'
   home "#{node.otrs.prefix}/otrs"
-  shell "/bin/bash"
+  shell '/bin/bash'
   group node['apache']['group']
   system true
 end
@@ -36,40 +36,51 @@ node.set_unless['otrs']['kernel_config']['system_id'] = rand(9999)
 ############################
 # Perl setup
 
-include_recipe "perl"
+include_recipe 'perl'
+
+%w{libssl-dev libexpat-dev libgd-gd2-perl}.each do |pkg|
+  package pkg do
+    action :install
+  end
+end
 
 # Required Perl modules
 cpan_modules = [
-  "Compress::Zlib",
-  "DBI",
-  "DBD::mysql",
-  "Digest:MD5",
-  "Crypt::PasswdMD5",
-  "CSS:Minifier",
-  "GD",
-  "GD::Text",
-  "GD::Text:Align",
-  "GD::Graph",
-  "GD::Graph::lines",
-  "IO::Socket::SSL",
-  "JavaScript:Minifier",
-  "JSON::XS",
-  "LWP::UserAgent",
-  "Mail::IMAPClient",
-  "MIME::Base64",
-  "Net::DNS",
-  "Net::IMAP::Simple::SSL",
-  "Net::LDAP",
-  "Net::SMTP::TLS::ButMaintained",
-  "PDF::API2",
-  "Text::CSV_XS",
-  "XML::Parser"
+  'Compress::Zlib',
+  'DBI',
+  'DBD::mysql',
+  'Digest::MD5',
+  'Crypt::PasswdMD5',
+  'Crypt::Eksblowfish::Bcrypt',
+  'Crypt::SSLeay',
+  'CSS::Minifier',
+  'GD',
+  'GD::Text',
+  'GD::Text::Align',
+  'GD::Graph',
+  'GD::Graph::lines',
+  'Encode::HanExtra',
+  'IO::Socket::SSL',
+  'JavaScript::Minifier',
+  'JSON::XS',
+  'LWP::UserAgent',
+  'Mail::IMAPClient',
+  'MIME::Base64',
+  'Net::DNS',
+  'Net::IMAP::Simple::SSL',
+  'Net::LDAP',
+  'Net::SMTP::TLS::ButMaintained',
+  'Net::SSL',
+  'PDF::API2',
+  'Text::CSV_XS',
+  'XML::Parser',
+  'YAML::XS'
 ]
 
-cpan_modules.each do |cpan_module|
-  cpan_module #{cpan_module}
+cpan_modules.each do |cmod|
+  cpan_module cmod
+  log cmod
 end
-
 
 ############################
 # Download & extract OTRS
@@ -77,15 +88,15 @@ end
 # Download OTRS source code
 remote_file "#{node.otrs.prefix}/otrs-#{node.otrs.version}.tar.gz" do
   source "http://ftp.otrs.org/pub/otrs/otrs-#{node.otrs.version}.tar.gz"
-  mode "0644"
+  mode '0644'
   action :create_if_missing
-  notifies :run, "script[extract]", :immediately
+  notifies :run, 'script[extract]', :immediately
 end
 
 # Extract downloaded file
-script "extract" do
-  interpreter "bash"
-  user "root"
+script 'extract' do
+  interpreter 'bash'
+  user 'root'
   cwd node['otrs']['prefix']
   action :nothing
   code <<-EOH
@@ -103,33 +114,32 @@ end
 
 # Install MySQL server
 
-include_recipe "mysql::server"
-include_recipe "mysql::client"
-include_recipe "database"
+include_recipe 'mysql::server'
+include_recipe 'mysql::client'
+include_recipe 'database'
 
 # generate the password
 ::Chef::Recipe.send(:include, Opscode::OpenSSL::Password)
 node.set_unless['otrs']['database']['password'] = secure_password
 
-mysql_connection_info = {:host => "localhost", :username => 'root', :password => node['mysql']['server_root_password']}
-
+mysql_connection_info = { :host => 'localhost', :username => 'root', :password => node['mysql']['server_root_password'] }
 
 begin
-  gem_package "mysql" do
+  gem_package 'mysql' do
     action :install
   end
-  Gem.clear_paths  
+  Gem.clear_paths
   require 'mysql'
-  m=Mysql.new("localhost","root",node['mysql']['server_root_password']) 
+  m = Mysql.new('localhost', 'root', node['mysql']['server_root_password'])
 
-  if m.list_dbs.include?("otrs") == false
+  unless m.list_dbs.include?('otrs')
     # create otrs database
     mysql_database 'otrs' do
       connection mysql_connection_info
       action :create
-      notifies :run, "execute[otrs_schema]", :immediately
-      notifies :run, "execute[otrs_initial_insert]", :immediately
-      notifies :run, "execute[otrs_schema-post]", :immediately
+      notifies :run, 'execute[otrs_schema]', :immediately
+      notifies :run, 'execute[otrs_initial_insert]', :immediately
+      notifies :run, 'execute[otrs_schema-post]', :immediately
     end
 
     # create otrs user
@@ -145,21 +155,21 @@ begin
       password node['otrs']['database']['password']
       database_name 'otrs'
       host 'localhost'
-      privileges [:select,:update,:insert,:create,:alter,:drop,:delete]
+      privileges [:select, :update, :insert, :create, :alter, :drop, :delete]
       action :grant
     end
-    
-    execute "otrs_schema" do
+
+    execute 'otrs_schema' do
       command "/usr/bin/mysql -u root #{node.otrs.database.name} -p#{node.mysql.server_root_password} < #{node.otrs.prefix}/otrs/scripts/database/otrs-schema.mysql.sql"
       action :nothing
     end
-    
-    execute "otrs_initial_insert" do
+
+    execute 'otrs_initial_insert' do
       command "/usr/bin/mysql -u root #{node.otrs.database.name} -p#{node.mysql.server_root_password} < #{node.otrs.prefix}/otrs/scripts/database/otrs-initial_insert.mysql.sql"
       action :nothing
     end
-    
-    execute "otrs_schema-post" do
+
+    execute 'otrs_schema-post' do
       command "/usr/bin/mysql -u root #{node.otrs.database.name} -p#{node.mysql.server_root_password} < #{node.otrs.prefix}/otrs/scripts/database/otrs-schema-post.mysql.sql"
       action :nothing
     end
@@ -173,57 +183,57 @@ end
 
 # install OTRS configuration file
 template "#{node.otrs.prefix}/otrs/Kernel/Config.pm" do
-  source "Config.pm.erb"
-  owner "otrs"
+  source 'Config.pm.erb'
+  owner 'otrs'
   group node['apache']['group']
-  mode "0664"
-  notifies :run, "execute[SetPermissions]"
-  notifies :run, "execute[RebuildConfig]"
-  notifies :run, "execute[DeleteCache]"
+  mode '0664'
+  notifies :run, 'execute[SetPermissions]'
+  notifies :run, 'execute[RebuildConfig]'
+  notifies :run, 'execute[DeleteCache]'
 end
 
 template "#{node.otrs.prefix}/otrs/Kernel/Config/GenericAgent.pm" do
-  source "GenericAgent.pm.erb"
-  owner "otrs"
+  source 'GenericAgent.pm.erb'
+  owner 'otrs'
   group node['apache']['group']
-  mode "0664"
-  notifies :run, "execute[SetPermissions]"
-  notifies :run, "execute[RebuildConfig]"
-  notifies :run, "execute[DeleteCache]"
+  mode '0664'
+  notifies :run, 'execute[SetPermissions]'
+  notifies :run, 'execute[RebuildConfig]'
+  notifies :run, 'execute[DeleteCache]'
 end
 
 template "#{node.otrs.prefix}/otrs/Kernel/Config/Files/ZZZAuto.pm" do
-  source "SysConfig.pm"
-  owner "otrs"
+  source 'SysConfig.pm'
+  owner 'otrs'
   group node['apache']['group']
-  mode "0664"
-  notifies :run, "execute[SetPermissions]"
-  notifies :run, "execute[RebuildConfig]"
-  notifies :run, "execute[DeleteCache]"
+  mode '0664'
+  notifies :run, 'execute[SetPermissions]'
+  notifies :run, 'execute[RebuildConfig]'
+  notifies :run, 'execute[DeleteCache]'
 end
 
 ############################
 # OTRS house keeping
 
 # Set file system permissions
-execute "SetPermissions" do
+execute 'SetPermissions' do
   command "bin/otrs.SetPermissions.pl #{node.otrs.prefix}/otrs-#{node.otrs.version} --otrs-user=otrs --otrs-group=#{node.apache.group} --web-user=#{node.apache.user} --web-group=#{node.apache.group}"
   cwd "#{node.otrs.prefix}/otrs"
-  user "root"
+  user 'root'
   action :nothing
 end
 
-execute "RebuildConfig" do
-  command "bin/otrs.RebuildConfig.pl"
+execute 'RebuildConfig' do
+  command 'bin/otrs.RebuildConfig.pl'
   cwd "#{node.otrs.prefix}/otrs"
-  user "otrs"
+  user 'otrs'
   action :nothing
 end
 
-execute "DeleteCache" do
-  command "bin/otrs.DeleteCache.pl"
+execute 'DeleteCache' do
+  command 'bin/otrs.DeleteCache.pl'
   cwd "#{node.otrs.prefix}/otrs"
-  user "otrs"
+  user 'otrs'
   action :nothing
 end
 
@@ -231,13 +241,13 @@ end
 # Apache setup
 
 # set up mod_perl2
-cpan_module "Apache::DBI"
-package "libapache2-mod-perl2"
+cpan_module 'Apache::DBI'
+package 'libapache2-mod-perl2'
 
 template "#{node.otrs.prefix}/otrs/scripts/apache2-perl-startup.pl" do
-  source "apache2-perl-startup.pl.erb"
-  owner "root"
-  mode "655"
+  source 'apache2-perl-startup.pl.erb'
+  owner 'root'
+  mode '655'
 end
 
 # create vhost
@@ -248,87 +258,87 @@ web_app node['otrs']['fqdn'] do
 end
 
 # Disable Apache default site
-apache_site "000-default" do
+apache_site '000-default' do
   enable false
 end
 
 #########################
 # Cron jobs
 
-cron "DeleteCache" do
-  hour "0"
-  minute "20"
+cron 'DeleteCache' do
+  hour '0'
+  minute '20'
   command "#{node.otrs.prefix}/otrs/bin/otrs.DeleteCache.pl --expired >> /dev/null"
-  user "otrs"
+  user 'otrs'
 end
 
-cron "LoaderCache" do
-  hour "0"
-  minute "30"
+cron 'LoaderCache' do
+  hour '0'
+  minute '30'
   command "#{node.otrs.prefix}/otrs/bin/otrs.LoaderCache.pl -o delete >> /dev/null"
-  user "otrs"
+  user 'otrs'
 end
 
-#cron "fetchmail" do
-#  minute "*/5"
-#  command "[ -x /usr/bin/fetchmail ] && /usr/bin/fetchmail -a >> /dev/null"
-#  user "otrs"
-#end
+# cron 'fetchmail' do
+#   minute '*/5'
+#   command '[ -x /usr/bin/fetchmail ] && /usr/bin/fetchmail -a >> /dev/null'
+#   user 'otrs'
+# end
 
-#cron "fetchmail_ssl" do
-#  minute "*/5"
-#  command "[ -x /usr/bin/fetchmail ] && /usr/bin/fetchmail -a --ssl >> /dev/null"
-#  user "otrs"
-#end
+# cron 'fetchmail_ssl' do
+#   minute '*/5'
+#   command '[ -x /usr/bin/fetchmail ] && /usr/bin/fetchmail -a --ssl >> /dev/null'
+#   user 'otrs'
+# end
 
-cron "GenericAgent_db" do
-  minute "*/10"
+cron 'GenericAgent_db' do
+  minute '*/10'
   command "#{node.otrs.prefix}/otrs/bin/otrs.GenericAgent.pl -c db >> /dev/null"
-  user "otrs"
+  user 'otrs'
 end
 
-cron "GenericAgent" do
-  minute "*/20"
+cron 'GenericAgent' do
+  minute '*/20'
   command "#{node.otrs.prefix}/otrs/bin/otrs.GenericAgent.pl >> /dev/null"
-  user "otrs"
+  user 'otrs'
 end
 
-cron "PendingJobs" do
-  hour "*/2"
-  minute "45"
+cron 'PendingJobs' do
+  hour '*/2'
+  minute '45'
   command "#{node.otrs.prefix}/otrs/bin/otrs.PendingJobs.pl >> /dev/null"
-  user "otrs"
+  user 'otrs'
 end
 
-cron "cleanup" do
-  hour "0"
-  minute "10"
+cron 'cleanup' do
+  hour '0'
+  minute '10'
   command "#{node.otrs.prefix}/otrs/bin/otrs.cleanup >> /dev/null"
-  user "otrs"
+  user 'otrs'
 end
 
-cron "PostMasterMailbox" do
-  minute "*/5"
+cron 'PostMasterMailbox' do
+  minute '*/5'
   command "#{node.otrs.prefix}/otrs/bin/otrs.PostMasterMailbox.pl >> /dev/null"
-  user "otrs"
+  user 'otrs'
 end
 
-cron "RebuildTicketIndex" do
-  hour "1"
-  minute "1"
+cron 'RebuildTicketIndex' do
+  hour '1'
+  minute '1'
   command "#{node.otrs.prefix}/otrs/bin/otrs.RebuildTicketIndex.pl >> /dev/null"
-  user "otrs"
+  user 'otrs'
 end
 
-cron "DeleteSessionIDs" do
-  hour "0"
-  minute ""
+cron 'DeleteSessionIDs' do
+  hour '*/2'
+  minute '55'
   command "#{node.otrs.prefix}/otrs/bin/otrs.DeleteSessionIDs.pl --expired >> /dev/null"
-  user "otrs"
+  user 'otrs'
 end
 
-cron "UnlockTickets" do
-  minute "35"
+cron 'UnlockTickets' do
+  minute '35'
   command "#{node.otrs.prefix}/otrs/bin/otrs.UnlockTickets.pl --timeout >> /dev/null"
-  user "otrs"
+  user 'otrs'
 end

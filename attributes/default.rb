@@ -2,7 +2,7 @@
 # Cookbook Name:: otrs
 # Attributes:: default
 
-default['otrs']['version'] = "3.1.1"
+default['otrs']['version'] = "3.3.4"
 
 default['otrs']['fqdn'] = fqdn
 
