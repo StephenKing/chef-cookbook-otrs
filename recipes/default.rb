@@ -204,14 +204,14 @@ template "#{node['otrs']['prefix']}/otrs/Kernel/Config/GenericAgent.pm" do
   notifies :run, 'execute[DeleteCache]'
 end
 
-template "#{node['otrs']['prefix']}/otrs/Kernel/Config/Files/ZZZAuto.pm" do
-  source 'SysConfig.pm'
+cookbook_file "#{node['otrs']['prefix']}/otrs/Kernel/Config/Files/ZZZAuto.pm" do
   owner 'otrs'
   group node['apache']['group']
   mode '0664'
   notifies :run, 'execute[SetPermissions]'
   notifies :run, 'execute[RebuildConfig]'
   notifies :run, 'execute[DeleteCache]'
+  action :create_if_missing
 end
 
 ############################
