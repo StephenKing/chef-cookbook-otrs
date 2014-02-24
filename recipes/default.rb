@@ -188,7 +188,7 @@ template "#{node['otrs']['prefix']}/otrs/Kernel/Config.pm" do
   source 'Config.pm.erb'
   owner 'otrs'
   group node['apache']['group']
-  mode '0664'
+  mode '0660'
   notifies :run, 'execute[SetPermissions]'
   notifies :run, 'execute[RebuildConfig]'
   notifies :run, 'execute[DeleteCache]'
@@ -198,7 +198,7 @@ template "#{node['otrs']['prefix']}/otrs/Kernel/Config/GenericAgent.pm" do
   source 'GenericAgent.pm.erb'
   owner 'otrs'
   group node['apache']['group']
-  mode '0664'
+  mode '0660'
   notifies :run, 'execute[SetPermissions]'
   notifies :run, 'execute[RebuildConfig]'
   notifies :run, 'execute[DeleteCache]'
@@ -207,7 +207,7 @@ end
 cookbook_file "#{node['otrs']['prefix']}/otrs/Kernel/Config/Files/ZZZAuto.pm" do
   owner 'otrs'
   group node['apache']['group']
-  mode '0664'
+  mode '0660'
   notifies :run, 'execute[SetPermissions]'
   notifies :run, 'execute[RebuildConfig]'
   notifies :run, 'execute[DeleteCache]'
