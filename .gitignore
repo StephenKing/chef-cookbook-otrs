@@ -1,0 +1,8 @@
+*~
+*.swp
+Berksfile.lock
+.vagrant
+.kitchen
+templates/default/nginx_rsyslog.erb
+.kitchen/
+.kitchen.local.yml

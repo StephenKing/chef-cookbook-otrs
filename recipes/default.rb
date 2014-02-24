@@ -24,7 +24,7 @@
 # create a unix user account for OTRS
 user 'otrs' do
   comment 'OTRS user'
-  home "#{node.otrs.prefix}/otrs"
+  home "#{node['otrs']['prefix']}/otrs"
   shell '/bin/bash'
   group node['apache']['group']
   system true
@@ -86,8 +86,8 @@ end
 # Download & extract OTRS
 
 # Download OTRS source code
-remote_file "#{node.otrs.prefix}/otrs-#{node.otrs.version}.tar.gz" do
-  source "http://ftp.otrs.org/pub/otrs/otrs-#{node.otrs.version}.tar.gz"
+remote_file "#{node['otrs']['prefix']}/otrs-#{node['otrs']['version']}.tar.gz" do
+  source "http://ftp.otrs.org/pub/otrs/otrs-#{node['otrs']['version']}.tar.gz"
   mode '0644'
   action :create_if_missing
   notifies :run, 'script[extract]', :immediately
@@ -100,19 +100,21 @@ script 'extract' do
   cwd node['otrs']['prefix']
   action :nothing
   code <<-EOH
-  tar xfz #{node.otrs.prefix}/otrs-#{node.otrs.version}.tar.gz
+  tar xfz #{node['otrs']['prefix']}/otrs-#{node['otrs']['version']}.tar.gz
   EOH
 end
 
 # Create symlink from otrs/ to otrs-a.b.c./
-link "#{node.otrs.prefix}/otrs" do
-  to "#{node.otrs.prefix}/otrs-#{node.otrs.version}"
+link "#{node['otrs']['prefix']}/otrs" do
+  to "#{node['otrs']['prefix']}/otrs-#{node['otrs']['version']}"
 end
 
 ############################
 # MySql setup
 
 # Install MySQL server
+
+node.set_unless['mysql']['tunable']['max_allowed_packet'] = '20M'
 
 include_recipe 'mysql::server'
 include_recipe 'mysql::client'
@@ -160,17 +162,17 @@ begin
     end
 
     execute 'otrs_schema' do
-      command "/usr/bin/mysql -u root #{node.otrs.database.name} -p#{node.mysql.server_root_password} < #{node.otrs.prefix}/otrs/scripts/database/otrs-schema.mysql.sql"
+      command "/usr/bin/mysql -u root #{node['otrs']['database']['name']} -p#{node['mysql']['server_root_password']} < #{node['otrs']['prefix']}/otrs/scripts/database/otrs-schema.mysql.sql"
       action :nothing
     end
 
     execute 'otrs_initial_insert' do
-      command "/usr/bin/mysql -u root #{node.otrs.database.name} -p#{node.mysql.server_root_password} < #{node.otrs.prefix}/otrs/scripts/database/otrs-initial_insert.mysql.sql"
+      command "/usr/bin/mysql -u root #{node['otrs']['database']['name']} -p#{node['mysql']['server_root_password']} < #{node['otrs']['prefix']}/otrs/scripts/database/otrs-initial_insert.mysql.sql"
       action :nothing
     end
 
     execute 'otrs_schema-post' do
-      command "/usr/bin/mysql -u root #{node.otrs.database.name} -p#{node.mysql.server_root_password} < #{node.otrs.prefix}/otrs/scripts/database/otrs-schema-post.mysql.sql"
+      command "/usr/bin/mysql -u root #{node['otrs']['database']['name']} -p#{node['mysql']['server_root_password']} < #{node['otrs']['prefix']}/otrs/scripts/database/otrs-schema-post.mysql.sql"
       action :nothing
     end
   end
@@ -182,7 +184,7 @@ end
 # Configuration files
 
 # install OTRS configuration file
-template "#{node.otrs.prefix}/otrs/Kernel/Config.pm" do
+template "#{node['otrs']['prefix']}/otrs/Kernel/Config.pm" do
   source 'Config.pm.erb'
   owner 'otrs'
   group node['apache']['group']
@@ -192,7 +194,7 @@ template "#{node.otrs.prefix}/otrs/Kernel/Config.pm" do
   notifies :run, 'execute[DeleteCache]'
 end
 
-template "#{node.otrs.prefix}/otrs/Kernel/Config/GenericAgent.pm" do
+template "#{node['otrs']['prefix']}/otrs/Kernel/Config/GenericAgent.pm" do
   source 'GenericAgent.pm.erb'
   owner 'otrs'
   group node['apache']['group']
@@ -202,7 +204,7 @@ template "#{node.otrs.prefix}/otrs/Kernel/Config/GenericAgent.pm" do
   notifies :run, 'execute[DeleteCache]'
 end
 
-template "#{node.otrs.prefix}/otrs/Kernel/Config/Files/ZZZAuto.pm" do
+template "#{node['otrs']['prefix']}/otrs/Kernel/Config/Files/ZZZAuto.pm" do
   source 'SysConfig.pm'
   owner 'otrs'
   group node['apache']['group']
@@ -217,22 +219,22 @@ end
 
 # Set file system permissions
 execute 'SetPermissions' do
-  command "bin/otrs.SetPermissions.pl #{node.otrs.prefix}/otrs-#{node.otrs.version} --otrs-user=otrs --otrs-group=#{node.apache.group} --web-user=#{node.apache.user} --web-group=#{node.apache.group}"
-  cwd "#{node.otrs.prefix}/otrs"
+  command "bin/otrs.SetPermissions.pl #{node['otrs']['prefix']}/otrs-#{node['otrs']['version']} --otrs-user=otrs --otrs-group=#{node['apache']['group']} --web-user=#{node['apache']['user']} --web-group=#{node['apache']['group']}"
+  cwd "#{node['otrs']['prefix']}/otrs"
   user 'root'
   action :nothing
 end
 
 execute 'RebuildConfig' do
   command 'bin/otrs.RebuildConfig.pl'
-  cwd "#{node.otrs.prefix}/otrs"
+  cwd "#{node['otrs']['prefix']}/otrs"
   user 'otrs'
   action :nothing
 end
 
 execute 'DeleteCache' do
   command 'bin/otrs.DeleteCache.pl'
-  cwd "#{node.otrs.prefix}/otrs"
+  cwd "#{node['otrs']['prefix']}/otrs"
   user 'otrs'
   action :nothing
 end
@@ -244,7 +246,7 @@ end
 cpan_module 'Apache::DBI'
 package 'libapache2-mod-perl2'
 
-template "#{node.otrs.prefix}/otrs/scripts/apache2-perl-startup.pl" do
+template "#{node['otrs']['prefix']}/otrs/scripts/apache2-perl-startup.pl" do
   source 'apache2-perl-startup.pl.erb'
   owner 'root'
   mode '655'
@@ -253,8 +255,8 @@ end
 # create vhost
 web_app node['otrs']['fqdn'] do
   server_name node['otrs']['fqdn']
-  server_aliases ["www.#{node.otrs.fqdn}"]
-  docroot "#{node.otrs.prefix}/otrs-#{node.otrs.version}"
+  server_aliases ["www.#{node['otrs']['fqdn']}"]
+  docroot "#{node['otrs']['prefix']}/otrs-#{node['otrs']['version']}"
 end
 
 # Disable Apache default site
@@ -263,19 +265,34 @@ apache_site '000-default' do
 end
 
 #########################
+# Scheduler Service
+
+template '/etc/init.d/otrs-scheduler' do
+  source 'otrs-scheduler-linux.erb'
+  owner 'root'
+  group 'root'
+  mode '0755'
+end
+
+service 'otrs-scheduler' do
+  supports :status => true, :restart => true, :reload => true
+  action [ :enable, :start ]
+end
+
+#########################
 # Cron jobs
 
 cron 'DeleteCache' do
   hour '0'
   minute '20'
-  command "#{node.otrs.prefix}/otrs/bin/otrs.DeleteCache.pl --expired >> /dev/null"
+  command "#{node['otrs']['prefix']}/otrs/bin/otrs.DeleteCache.pl --expired >> /dev/null"
   user 'otrs'
 end
 
 cron 'LoaderCache' do
   hour '0'
   minute '30'
-  command "#{node.otrs.prefix}/otrs/bin/otrs.LoaderCache.pl -o delete >> /dev/null"
+  command "#{node['otrs']['prefix']}/otrs/bin/otrs.LoaderCache.pl -o delete >> /dev/null"
   user 'otrs'
 end
 
@@ -293,52 +310,52 @@ end
 
 cron 'GenericAgent_db' do
   minute '*/10'
-  command "#{node.otrs.prefix}/otrs/bin/otrs.GenericAgent.pl -c db >> /dev/null"
+  command "#{node['otrs']['prefix']}/otrs/bin/otrs.GenericAgent.pl -c db >> /dev/null"
   user 'otrs'
 end
 
 cron 'GenericAgent' do
   minute '*/20'
-  command "#{node.otrs.prefix}/otrs/bin/otrs.GenericAgent.pl >> /dev/null"
+  command "#{node['otrs']['prefix']}/otrs/bin/otrs.GenericAgent.pl >> /dev/null"
   user 'otrs'
 end
 
 cron 'PendingJobs' do
   hour '*/2'
   minute '45'
-  command "#{node.otrs.prefix}/otrs/bin/otrs.PendingJobs.pl >> /dev/null"
+  command "#{node['otrs']['prefix']}/otrs/bin/otrs.PendingJobs.pl >> /dev/null"
   user 'otrs'
 end
 
 cron 'cleanup' do
   hour '0'
   minute '10'
-  command "#{node.otrs.prefix}/otrs/bin/otrs.cleanup >> /dev/null"
+  command "#{node['otrs']['prefix']}/otrs/bin/otrs.cleanup >> /dev/null"
   user 'otrs'
 end
 
 cron 'PostMasterMailbox' do
   minute '*/5'
-  command "#{node.otrs.prefix}/otrs/bin/otrs.PostMasterMailbox.pl >> /dev/null"
+  command "#{node['otrs']['prefix']}/otrs/bin/otrs.PostMasterMailbox.pl >> /dev/null"
   user 'otrs'
 end
 
 cron 'RebuildTicketIndex' do
   hour '1'
   minute '1'
-  command "#{node.otrs.prefix}/otrs/bin/otrs.RebuildTicketIndex.pl >> /dev/null"
+  command "#{node['otrs']['prefix']}/otrs/bin/otrs.RebuildTicketIndex.pl >> /dev/null"
   user 'otrs'
 end
 
 cron 'DeleteSessionIDs' do
   hour '*/2'
   minute '55'
-  command "#{node.otrs.prefix}/otrs/bin/otrs.DeleteSessionIDs.pl --expired >> /dev/null"
+  command "#{node['otrs']['prefix']}/otrs/bin/otrs.DeleteSessionIDs.pl --expired >> /dev/null"
   user 'otrs'
 end
 
 cron 'UnlockTickets' do
   minute '35'
-  command "#{node.otrs.prefix}/otrs/bin/otrs.UnlockTickets.pl --timeout >> /dev/null"
+  command "#{node['otrs']['prefix']}/otrs/bin/otrs.UnlockTickets.pl --timeout >> /dev/null"
   user 'otrs'
 end
