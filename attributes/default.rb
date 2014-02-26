@@ -17,4 +17,7 @@ default['otrs']['kernel_config']['email'] = "otrs@otrs.example.org"
 default['otrs']['kernel_config']['organization'] = "Example Association"
 default['otrs']['kernel_config']['system_id'] = nil
 
+default['otrs']['logging']['loglevel'] = 'info'
+default['otrs']['logging']['to_syslog'] = false
+
 default[:apache][:listen_ports] = [ 80 ]

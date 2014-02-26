@@ -5,9 +5,14 @@
   
   DirectoryIndex index.pl index.html index.html
  
-  LogLevel info
+  LogLevel <%= node['otrs']['logging']['loglevel'] %>
+  <% if ! node['otrs']['logging']['to_syslog'] %>
   ErrorLog <%= node[:apache][:log_dir] %>/<%= @params[:name] %>-error.log
   CustomLog <%= node[:apache][:log_dir] %>/<%= @params[:name] %>-access.log combined
+  <% else %>
+  CustomLog "|/usr/bin/logger -t <%= node['apache']['package'] %> -p local6.info" combined
+  ErrorLog syslog:local7
+  <% end %>
 
   # --
   # added for OTRS (http://otrs.org/)
@@ -61,7 +66,7 @@
     Order allow,deny
     Allow from all
   </Directory>
-  <Directory <%= node['otrs']['prefix'] %>/otrs/var/httpd/htdocs/">
+  <Directory "<%= node['otrs']['prefix'] %>/otrs/var/httpd/htdocs/">
     AllowOverride None
     Order allow,deny
     Allow from all
