@@ -255,7 +255,7 @@ end
 # create vhost
 web_app node['otrs']['fqdn'] do
   server_name node['otrs']['fqdn']
-  server_aliases ["www.#{node['otrs']['fqdn']}"]
+  server_aliases = node['otrs']['server_aliases'].nil? ? ["www.#{node['otrs']['fqdn']}"] : node['otrs']['server_aliases']
   docroot "#{node['otrs']['prefix']}/otrs-#{node['otrs']['version']}"
 end
 

@@ -2,11 +2,11 @@
 # Cookbook Name:: otrs
 # Attributes:: default
 
-default['otrs']['version'] = "3.3.4"
+default['otrs']['version'] = "3.3.5"
 
 default['otrs']['fqdn'] = fqdn
 
-default['otrs']['prefix'] = "/usr/local"
+default['otrs']['prefix'] = "/opt"
 
 default['otrs']['database']['host'] = "localhost"
 default['otrs']['database']['user'] = "otrs"
@@ -15,7 +15,9 @@ default['otrs']['database']['name'] = "otrs"
 
 default['otrs']['kernel_config']['email'] = "otrs@otrs.example.org"
 default['otrs']['kernel_config']['organization'] = "Example Association"
-default['otrs']['kernel_config']['system_id'] = nil
+default['otrs']['kernel_config']['system_id'] = nil # must be numeric only!
+
+default['otrs']['server_aliases'] = nil
 
 default['otrs']['logging']['loglevel'] = 'info'
 default['otrs']['logging']['to_syslog'] = false
