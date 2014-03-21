@@ -5,9 +5,14 @@
   
   DirectoryIndex index.pl index.html index.html
  
-  LogLevel info
+  LogLevel <%= node['otrs']['logging']['loglevel'] %>
+  <% if ! node['otrs']['logging']['to_syslog'] %>
   ErrorLog <%= node[:apache][:log_dir] %>/<%= @params[:name] %>-error.log
   CustomLog <%= node[:apache][:log_dir] %>/<%= @params[:name] %>-access.log combined
+  <% else %>
+  CustomLog "|/usr/bin/logger -t <%= node['apache']['package'] %> -p local6.info" combined
+  ErrorLog syslog:local7
+  <% end %>
 
   # --
   # added for OTRS (http://otrs.org/)
@@ -15,8 +20,8 @@
   # --
 
   # agent, admin and customer frontend
-  ScriptAlias /otrs/ "<%= node.otrs.prefix %>/otrs/bin/cgi-bin/"
-  Alias /otrs-web/ "<%= node.otrs.prefix %>/otrs/var/httpd/htdocs/"
+  ScriptAlias /otrs/ "<%= node['otrs']['prefix'] %>/otrs/bin/cgi-bin/"
+  Alias /otrs-web/ "<%= node['otrs']['prefix'] %>/otrs/var/httpd/htdocs/"
 
   # activate this if you are using an Oracle database
   #SetEnv ORACLE_HOME /path/to/your/oracle/
@@ -28,7 +33,7 @@
   <IfModule mod_perl.c>
 
     # load all otrs modules
-    Perlrequire <%= node.otrs.prefix %>/otrs/scripts/apache2-perl-startup.pl
+    Perlrequire <%= node['otrs']['prefix'] %>/otrs/scripts/apache2-perl-startup.pl
 
     # Apache::Reload - Reload Perl Modules when Changed on Disk
     PerlModule Apache2::Reload
@@ -55,26 +60,26 @@
   </IfModule>
 
   # directory settings
-  <Directory "<%= node.otrs.prefix %>/otrs/bin/cgi-bin/">
+  <Directory "<%= node['otrs']['prefix'] %>/otrs/bin/cgi-bin/">
     AllowOverride None
     Options +ExecCGI -Includes
     Order allow,deny
     Allow from all
   </Directory>
-  <Directory <%= node.otrs.prefix %>/otrs/var/httpd/htdocs/">
+  <Directory "<%= node['otrs']['prefix'] %>/otrs/var/httpd/htdocs/">
     AllowOverride None
     Order allow,deny
     Allow from all
   </Directory>
 
   <IfModule mod_headers.c>
-    <Directory "<%= node.otrs.prefix %>/otrs/var/httpd/htdocs/skins/*/*/css-cache">
+    <Directory "<%= node['otrs']['prefix'] %>/otrs/var/httpd/htdocs/skins/*/*/css-cache">
       <FilesMatch "\.(css|CSS)$">
         Header set Cache-Control "max-age=2592000 must-revalidate"
       </FilesMatch>
     </Directory>
 
-    <Directory "<%= node.otrs.prefix %>/otrs/var/httpd/htdocs/js/js-cache">
+    <Directory "<%= node['otrs']['prefix'] %>/otrs/var/httpd/htdocs/js/js-cache">
       <FilesMatch "\.(js|JS)$">
         Header set Cache-Control "max-age=2592000 must-revalidate"
       </FilesMatch>
