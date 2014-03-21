@@ -6,7 +6,7 @@ default['otrs']['version'] = "3.3.5"
 
 default['otrs']['fqdn'] = fqdn
 
-default['otrs']['prefix'] = "/opt"
+default['otrs']['prefix'] = "/usr/local"
 
 default['otrs']['database']['host'] = "localhost"
 default['otrs']['database']['user'] = "otrs"
